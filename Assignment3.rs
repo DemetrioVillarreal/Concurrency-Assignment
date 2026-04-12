@@ -23,10 +23,13 @@ impl ThreadPool {
         assert!(size > 0);
         
         // TODO: Create a channel for sending jobs
-        
+        let (sender, receiver) = mpsc::channel();
+
+        // share receiver between threads
+        let receiver = Arc::new(Mutex::new(receiver));
         
         // TODO: Create and store workers
-        
+       
         
         // TODO: Return the ThreadPool
         
