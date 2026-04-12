@@ -11,10 +11,13 @@ fn main() {
     const ITEM_COUNT: usize = 20;
     
     // TODO: Create a channel for sending numbers
+    let (tx, rx) = mpsc::channel();
     
-    
+
+    let rx = Arc::new(Mutex::new(rx));
+
     // TODO: Create 2 producer threads
-    
+    let mut handles = Vec::new();
     
     // TODO: Create 3 consumer threads
     
