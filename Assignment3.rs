@@ -1,4 +1,3 @@
-
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
@@ -29,10 +28,17 @@ impl ThreadPool {
         let receiver = Arc::new(Mutex::new(receiver));
         
         // TODO: Create and store workers
-       
+        let mut workers = Vec::new();
+
+        for id in 0..size {
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
         
         // TODO: Return the ThreadPool
-        
+        ThreadPool {
+            workers,
+            sender,
+        }
     }
     
     // Execute a job in the thread pool
@@ -41,7 +47,8 @@ impl ThreadPool {
         F: FnOnce() + Send + 'static,
     {
         // TODO: Create a job from the closure and send it to a worker
-        
+        let job = Box::new(f);
+        self.sender.send(Message::NewJob(job)).unwrap();
     }
 }
 
@@ -49,10 +56,16 @@ impl ThreadPool {
 impl Drop for ThreadPool {
     fn drop(&mut self) {
         // TODO: Send terminate message to all workers
-        
+        for _ in &self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
         
         // TODO: Wait for all workers to finish
-        
+        for worker in &mut self.workers {
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
     }
 }
 
@@ -66,10 +79,28 @@ impl Worker {
     // Create a new worker with the specified ID
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
         // TODO: Create a thread that loops and receives jobs from the channel
-        
+        let thread = thread::spawn(move || {
+            loop {
+                let message = receiver.lock().unwrap().recv().unwrap();
+
+                match message {
+                    Message::NewJob(job) => {
+                        println!("Worker {} got a job", id);
+                        job();
+                    }
+                    Message::Terminate => {
+                        println!("Worker {} terminating", id);
+                        break;
+                    }
+                }
+            }
+        });
         
         // TODO: Return the Worker
-        
+        Worker {
+            id,
+            thread: Some(thread),
+        }
     }
 }
 
